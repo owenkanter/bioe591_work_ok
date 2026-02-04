@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
-# Downloading the data
-	# cd /c/Users/owenk/OneDrive/Desktop/GradCourses/Genomics591/Coding/week_1/ # enter the data directory
-	# curl --ssl-no-revoke https://raw.githubusercontent.com/elinck/genomics_eco_con/main/data/week_1.tar.gz -o week_1.tar.gz # download a resource at a url
-	# tar -xzf week_1.tar.gz # this command unzips a "tarball"
+# Downloaded the data
 		
 # 1. Change into week_1 directory
 	cd week_1/;
