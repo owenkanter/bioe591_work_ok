@@ -24,4 +24,7 @@
 	echo "metadata";
 	ls metadata/ | wc -l
 	
+# 5. Final Commit 
+	echo "DONE!"
+	
 
