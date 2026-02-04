@@ -1,5 +1,4 @@
-# BIOE591 Coursework Repository
-questionable edit
-local edit
-github edit
-final product
+# BIOE591 Coursework Repository - Owen Kanter
+Structure
+	homework/ #subdirectory for all assignments
+	referencescripts/ #subdirectory for personal scirpts for reference
