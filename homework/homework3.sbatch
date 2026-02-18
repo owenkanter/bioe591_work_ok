@@ -20,4 +20,4 @@
 module load Mamba/23.11.0-0
 eval "$(conda shell.bash hook)"
 conda activate demo_new
-seqtk sample ~/bioe-591-genomics/students/owenkanter/scripts/catamenia_analis.fastq.gz 10000 > subsampled_catamenia_analis.fq
+seqtk sample ~/bioe-591-genomics/course-materials/data/intro/catamenia_analis.fastq.gz 10000 > ~/bioe-591-genomics/students/owenkanter/scripts/demo/subsampled_catamenia_analis.fastq.gz
