@@ -1,12 +1,16 @@
 # BIOE591 Coursework Repository - Owen Kanter
-Structure
+Structure of Git Directory
 
-	homework/ #subdirectory for all assignments
+homework/ #subdirectory for all assignments
 	
-		markdown/ #subdirectory for all md homework documents
+	markdown/ #subdirectory for all md homework documents
 		
-		reports/ #subdirectory for all reports from analyses
+	reports/ #subdirectory for all reports from analyses
 		
-		scripts/ #subdirectory for all scripts
+		filtering/ #subdirectory for filtering (html) reports
+			
+		alignment/ #subdirectory for alignment depth and size reports
 		
-	practice/ #subdirectory for practice scripts or drafts for reference
+scripts/ #subdirectory for all scripts
+		
+practice/ #subdirectory for practice scripts or drafts for reference
