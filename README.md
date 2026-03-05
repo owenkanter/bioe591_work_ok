@@ -11,6 +11,8 @@ homework/ #subdirectory for all assignments
 			
 		alignment/ #subdirectory for alignment depth and size reports
 		
+		variantcalling/ #subdirectory for multisample vcf output
+		
 scripts/ #subdirectory for all scripts
 		
 practice/ #subdirectory for practice scripts or drafts for reference
