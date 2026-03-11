@@ -37,7 +37,7 @@ Owen Kanter
 	Justification: Allows for the evaluation of 
 	
 | Individual | Observed Homozygosity | Expected Homozygosity | N_Sites | F |
-|---|---|---|
+|---|---|---|---|---|
 | 161092 | 29 | 22.1 | 42 | 0.34703 |
 | 161139 | 34 | 22.1 | 42 | 0.59817 |
 | 161164 | 30 | 22.1 | 42 | 0.39726 |

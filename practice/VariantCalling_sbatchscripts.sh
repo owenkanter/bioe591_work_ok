@@ -93,4 +93,4 @@ bcftools mpileup -f ~/bioe-591-genomics/students/owenkanter/references/hemoglobi
 
 -----------------
 
-bcftools stats Diglossa_glauca_multisample.vcf | grep ^SN > ~/bioe-591-genomics/students/owenkanter/variant_calling/Diglossa_glauca_multisample.txt
+bcftools stats Diglossa_glauca_variant_filtering_finalscriptHW7.recode.vcf | grep ^SN > ~/bioe-591-genomics/students/owenkanter/variant_filtering/Diglossa_glauca_variant_filtering_finalscriptHW7.txt
