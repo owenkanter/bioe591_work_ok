@@ -90,3 +90,7 @@ conda activate bcftools
 bcftools mpileup -f ~/bioe-591-genomics/students/owenkanter/references/hemoglobin_references.fasta \
 ~/bioe-591-genomics/students/owenkanter/sequence_alignments/*.sorted.bam \
 | bcftools call -mv -Ov -o ~/bioe-591-genomics/students/owenkanter/variant_calling/Diglossa_glauca_multisample.vcf
+
+-----------------
+
+bcftools stats Diglossa_glauca_multisample.vcf | grep ^SN > ~/bioe-591-genomics/students/owenkanter/variant_calling/Diglossa_glauca_multisample.txt

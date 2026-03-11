@@ -13,6 +13,8 @@ homework/ #subdirectory for all assignments
 		
 		variantcalling/ #subdirectory for multisample vcf output
 		
+		variantfiltering/ #subdirectory for filtered vcf and summary statistic output
+		
 scripts/ #subdirectory for all scripts
 		
 practice/ #subdirectory for practice scripts or drafts for reference
