@@ -45,4 +45,4 @@ Owen Kanter
 | 176863 | 28 | 22.1 | 42 | 0.29680 |
 | 218504 | 30 | 22.1 | 42 | 0.39726 |
 
-Interpretation: Given that inbreeding coefficients range from 0 to 1, the values which range from 0.29680 to 0.64840. These values appear excessively high for a wild population that is not isolated.
+Interpretation: Given that these loci are exons and likely under strong natural selection, the high F_{IS} values are expected. 
