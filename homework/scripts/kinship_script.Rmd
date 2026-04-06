@@ -1,0 +1,274 @@
+---
+title: "Kinship Tutorial and Homework"
+author: Owen Kanter
+output: html_document
+---
+
+----------------------------------------------------------------------------------------------------------------------------
+**Tutorial**
+
+#Installing Packages
+
+```{r}
+install.packages("related", repos="http://R-Forge.R-project.org")
+install.packages("adegenet")
+install.packages("vcfR")
+install.packages("pegas")
+install.packages("tibble")
+```
+
+#Load Libraries
+
+```{r}
+library(related)
+library(adegenet)
+library(vcfR)
+library(pegas)
+library(tidyr)
+library(reshape2)
+library(ggplot2)
+library(tidyverse)
+```
+
+#Load Data
+
+```{r}
+setwd("/home/group/bioe-591-genomics/students/owenkanter/kinship/")
+
+vcf <- read.vcfR(file = "data/Inca_MaxMissing10.recode.vcf", verbose = TRUE)
+```
+
+#Viewing Metadata
+
+```{r}
+vcf
+vcf@meta
+vcf@fix
+vcf@gt
+```
+
+#Create genind
+
+```{r}
+genind_obj <- vcfR2genind(vcf)
+```
+
+#genid Summary
+
+```{r}
+head(genind_obj@tab)
+summary(genind_obj@loc.n.all)
+```
+
+#Observed and Expected Heterozgosity
+
+```{r}
+af_summary <- adegenet::summary(genind_obj) # here it is important to specify which package's summary function is used!
+af_summary # view object
+h_o <- af_summary$Hobs
+h_e <- af_summary$Hexp
+```
+
+#Viewing H_o and H_e
+
+```{r}
+head(h_o)
+head(h_e)
+het_df <- data.frame(locus = names(h_o), h_o = h_o, h_e = h_e)
+head(het_df)
+```
+
+#Estimating F_is
+
+```{r}
+Fis_per_locus <- 1 - (h_o / h_e)
+Fis_per_locus
+mean(Fis_per_locus, na.rm = TRUE)
+```
+
+#Assessing HWE
+
+```{r}
+loci_obj <- genind2loci(genind_obj)
+hwe_results <- pegas::hw.test(loci_obj, B = 100)
+hwe_results
+```
+
+#Significant HWE Deviations Summary
+
+```{r}
+hwe_results %>% as.tibble() %>% filter(Pr.exact<0.1)
+```
+
+#Convert to related accepted file format
+
+```{r}
+gt_filtered <- vcfR::extract.gt(vcf, element = "GT")
+```
+
+#Reframe into dataframe of integers
+
+```{r}
+# sample ids
+sample_ids <- colnames(gt_filtered)
+
+gt_to_alleles <- function(gt_vector) {
+  # split "0/1" or "0|1" into two integer alleles, returning a 2-column matrix (samples x 2 alleles)
+  allele1 <- integer(length(gt_vector))
+  allele2 <- integer(length(gt_vector))
+  
+  for (i in seq_along(gt_vector)) {
+    g <- gt_vector[i]
+    if (is.na(g) || g %in% c("./.", ".", "./", "/.")) {
+      allele1[i] <- 0
+      allele2[i] <- 0
+    } else {
+      parts <- as.integer(strsplit(g, "[/|]")[[1]])
+      allele1[i] <- parts[1] + 1L    # shift: 0->1 (ref), 1->2 (alt)
+      allele2[i] <- parts[2] + 1L
+    }
+  }
+  cbind(allele1, allele2)
+}
+
+allele_list <- vector("list", nrow(gt_filtered))
+
+for (v in seq_len(nrow(gt_filtered))) {
+  allele_list[[v]] <- gt_to_alleles(gt_filtered[v, ])
+}
+
+# combine: each element is (n_samples x 2); bind column-wise
+allele_matrix <- do.call(cbind, allele_list)
+
+# add individual IDs as the first column
+coancestry_input <- data.frame(IndID = sample_ids, allele_matrix,
+                               stringsAsFactors = FALSE)
+
+# column names: IndID, L1_a, L1_b, L2_a, L2_b, ...
+locus_names <- paste0(rep(paste0("L", seq_len(nrow(gt_filtered))),
+                          each = 2),
+                      rep(c("_a", "_b"), nrow(gt_filtered)))
+colnames(coancestry_input) <- c("IndID", locus_names)
+```
+
+#Preview dataframe structure
+
+```{r}
+coancestry_input[1:5, 1:7]
+```
+
+#Calculate Coancesty Metrics & Print
+
+```{r}
+kin_results <- related::coancestry(
+  genotype.data = coancestry_input,
+  wang          = 1,      # 1 = compute; 0 = skip
+  dyadml        = 1,
+  quellergt     = 1
+)
+
+head(kin_results$relatedness)
+```
+
+#save kinresults as CSV
+
+```{r}
+write.csv(kin_results$relatedness, file = "/home/group/bioe-591-genomics/students/owenkanter/kinship/data/relatedness_output.csv", row.names = TRUE)
+```
+
+---------------------------------------------------------------------------------------------------------------------------
+
+**Homework**
+
+#Load in ngsRelate and coancestry relatedness
+
+```{r}
+ngsrelateout <- read.table("/home/group/bioe-591-genomics/students/owenkanter/kinship/data/Inca_MaxMissing10.out", header = TRUE)
+
+relatedness <- read.csv("/home/group/bioe-591-genomics/students/owenkanter/kinship/data/relatedness_output.csv", header = TRUE)
+```
+
+# Create summary stats table
+
+```{r}
+# Creating a function that produces desired table of summary stats
+summary_stats <- function(x) {
+  c(
+    Mean = mean(x),
+    SE = sd(x)/sqrt(length(x)),
+    Median = median(x),
+    Q25 = quantile(x, 0.25),
+    Q75 = quantile(x, 0.75)
+  )
+}
+
+
+# Create a wrapper to run summary stats across multiple columns
+run_summary <- function(df, cols, dataset_name) { # Apply summary stats to each column listed for each dataset
+  res <- do.call(rbind, lapply(df[cols], summary_stats)) # Creating single table from results
+  res <- as.data.frame(res) # Create a data frame from results
+  res$column <- rownames(res) # Retain column names
+  res$dataset <- dataset_name # Add column with dataset name
+  rownames(res) <- NULL
+  return(res)
+}
+
+# Setting inputs for the function for ngs relate, chose to summarize rab, (F_a) inbreeding coefficient, inbreeding relatedness
+  cols_ngsrelate <- c("rab", "theta", "KING")
+    
+# Setting inputs for the related::coancestry, wan, dyadml, quellergt
+  cols_relatedness <- c("wang", "dyadml", "quellergt")
+
+# Apply summary stats to the both datasets
+  summary_ngsrelate <- run_summary(ngsrelateout, cols_ngsrelate, "ngsRelate")
+  summary_relatedness <- run_summary(relatedness, cols_relatedness, "related")
+
+# Create Combined summary table and print table
+  combined_summary <- rbind(summary_ngsrelate, summary_relatedness)
+  combined_summary
+```
+
+#Editing the table
+
+```{r}
+# Renaming columns by creating a vector with new names
+  new_names <- c(
+    "Q25.25%" = "Q25",
+    "Q75.75%" = "Q75",
+    "column" = "Relatedness Estimator",
+    "dataset" = "Analysis Package"
+  )
+
+# Applying new column names to the combined_summary data frame
+  colnames(combined_summary)[colnames(combined_summary) %in% names(new_names)] <-   new_names[colnames(combined_summary)[colnames(combined_summary) %in% names(new_names)]]
+
+#Reorder the columns
+  combined_summary <- combined_summary[, c("Relatedness Estimator", "Analysis Package","Mean", "SE", "Median", "Q25", "Q75")]
+  
+#Print Output  
+  combined_summary
+```
+
+# Creating png from table
+
+```{r}
+# Install gt for constructing table
+  install.packages("flextable")
+  install.packages("webshot2")
+
+# Load gt
+  library(flextable)
+  library(webshot2)
+
+# Ajusting table, reducing decimals, aligning columns, and adjusting font
+  summary_table_final <- flextable(combined_summary) %>%
+    set_table_properties(layout = "autofit") %>%
+    align(j = c("Relatedness Estimator", "Analysis Package","Mean", "SE", "Median", "Q25", "Q75"), align = "center", part = "all") %>%
+    fontsize(size = 12, part = "all") %>%
+    font(fontname = "Times New Roman", part = "all") %>%
+    bold(part = "header")
+
+#Save image
+  save_as_image(summary_table_final, "/home/group/bioe-591-genomics/students/owenkanter/kinship/data/summary_table_final.png")
+```
+
