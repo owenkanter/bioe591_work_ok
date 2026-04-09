@@ -1,0 +1,339 @@
+---
+title: "structure"
+author: "Owen Kanter
+date: "2026-04-07"
+---
+
+Class Exercise
+
+----------------------------------------------------------------------------------------------------------------------------
+
+#Load Libraries
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(adegenet)
+library(vcfR)
+```
+
+#Read in ADMIXTURE files
+
+```{r}
+# read sample names and extract
+fam <- read_table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/species.int.fam", 
+  col_names = FALSE,
+  show_col_types = FALSE
+)
+samples <- fam$X2   # individual IDs are usually column 2
+
+# choose your K value (will be 2 for this demo)
+K <- 2
+
+# read Q matrix
+q <- read_table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/k2/species.int.2.Q",
+  col_names = FALSE,
+  show_col_types = FALSE
+)
+
+# name the ancestry columns
+colnames(q) <- paste0("Cluster", 1:K)
+
+# combine with sample names
+q_df <- q %>%
+  mutate(sample = samples) %>%
+  relocate(sample)
+
+# convert to long format for ggplot
+q_long <- q_df %>%
+  pivot_longer(
+    cols = starts_with("Cluster"),
+    names_to = "cluster",
+    values_to = "ancestry"
+  ) %>%
+  mutate(sample = factor(sample, levels = samples))
+```
+
+#Plot in ggplot and save plot
+
+```{r}
+# plot
+ADMIXTURE_K2 <- ggplot(q_long, aes(x = sample, y = ancestry, fill = cluster)) +
+  geom_col(width = 1, color="white") +
+  theme_bw() +
+  labs(title = "ADMIXTURE Plot for K = 2 for Song Sparrows in SF Bay Area", x = "Individual", y = "Ancestry proportion") +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+#save plot
+print(ADMIXTURE_K2)
+
+ggsave("/home/group/bioe-591-genomics/students/owenkanter/structure/output/ADMIXTURE_K2.png", plot = ADMIXTURE_K2, width = 6, height = 4, dpi = 300)
+```
+
+#Extract Cross-validation values
+
+```{r}
+cv_df <- tibble(file = "/home/f85j978/bioe-591-genomics/students/owenkanter/structure/log/admixture1-3835507.out") %>%
+  mutate(
+    text = map_chr(file, read_file),
+    cv_line = str_extract(text, "CV error \\(K=\\d+\\):\\s*[-0-9.eE]+"),
+    K  = str_match(cv_line, "CV error \\(K=(\\d+)\\)")[,2] |> as.integer(),
+    CV = str_match(cv_line, ":\\s*([-0-9.eE]+)")[,2] |> as.numeric()
+  ) %>%
+  select(file, K, CV) %>%
+  arrange(K)
+cv_df
+```
+
+#Load in vcf and reformat as genid
+
+```{r}
+vcf <- read.vcfR(file = "/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/sparrows.vcf", verbose = TRUE)
+
+dna <- vcfR2DNAbin(vcf, unphased_as_NA = F, consensus = T, extract.haps = F)
+species_genind <- DNAbin2genind(dna)
+species_genind
+```
+
+#Scale Data and Print Screeplot
+
+```{r}
+species_genind_scaled <- scaleGen(species_genind,NA.method="mean",scale=F)
+species_pca <- prcomp(species_genind_scaled, center=F,scale=F)
+
+screeplot(species_pca)
+```
+
+#Extract First Few PCs and Plot
+
+```{r}
+pc <- data.frame(species_pca$x[,1:3])
+pc$sample <- rownames(pc)
+
+ggplot(data=pc,aes(x=PC1,y=PC2))+
+  geom_text(aes(label=sample))
+```
+
+#Apply A Priori K of 2 for DAPC and Visualize in Plot
+
+```{r}
+grp <- find.clusters(species_genind, n.pca = 50, n.clust = 2)
+grp
+
+pc$cluster <- grp$grp
+ggplot(pc, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(size = 2) +
+  geom_text(aes(label = sample), vjust = -0.5, size = 3) 
+```
+
+#DAPC Results Output and Probabilites of Ancestry Assignment
+
+```{r}
+dapc1 <- dapc(species_genind, pop = grp$grp, n.pca = 50, n.da = 2)
+dapc1
+
+q <- as.data.frame(dapc1$posterior)
+  q$sample <- rownames(q)
+  q_long2 <- q |>
+    pivot_longer(
+      cols = -sample,
+      names_to = "cluster",
+      values_to = "ancestry"
+    )
+q_long2
+```
+
+#Plot DAPC in Parallel Format
+
+```{r}
+ggplot(q_long, aes(x = sample, y = ancestry, fill = cluster)) +
+  geom_col(width = 1, color = "white") +
+  theme_bw() +
+  labs(x = "Individual", y = "Assignment probability") +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+```
+
+#Compare Results of Different K Values and Plot Results
+
+```{r}
+# identify clusters
+grp_auto <- find.clusters(
+  species_genind,
+  n.pca = 50,
+  choose.n.clust = FALSE, 
+  max.n.clust = 10,
+  stat = "BIC"
+)
+
+# print BIC values
+grp_auto$Kstat
+
+# plot!
+plot(
+  1:length(grp_auto$Kstat),
+  grp_auto$Kstat,
+  type = "b",
+  xlab = "K",
+  ylab = "BIC"
+)
+```
+
+----------------------------------------------------------------------------------------------------------------------------
+
+Homework
+
+#Read in ADMIXTURE files for K = 4
+
+```{r}
+# read sample names and extract
+fam <- read_table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/species.int.fam", 
+  col_names = FALSE,
+  show_col_types = FALSE
+)
+samples <- fam$X2   # individual IDs are usually column 2
+
+# choose your K value (will be 2 for this demo)
+K <- 4
+
+# read Q matrix
+q4 <- read_table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/k4/species.int.4.Q",
+  col_names = FALSE,
+  show_col_types = FALSE
+)
+
+# name the ancestry columns
+colnames(q4) <- paste0("Cluster", 1:K)
+
+# combine with sample names
+q_df4 <- q4 %>%
+  mutate(sample = samples) %>%
+  relocate(sample)
+
+# convert to long format for ggplot
+q_long4 <- q_df4 %>%
+  pivot_longer(
+    cols = starts_with("Cluster"),
+    names_to = "cluster",
+    values_to = "ancestry"
+  ) %>%
+  mutate(sample = factor(sample, levels = samples))
+```
+
+#Plot K = 4 in ggplot
+
+```{r}
+# plot
+ADMIXTURE_K4 <- ggplot(q_long4, aes(x = sample, y = ancestry, fill = cluster)) +
+  geom_col(width = 1, color="white") +
+  theme_bw() +
+  labs(title = "ADMIXTURE Plot for K = 4 for Song Sparrows in SF Bay Area", x = "Individual", y = "Ancestry proportion") +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+#save plot
+print(ADMIXTURE_K4)
+
+ggsave("/home/group/bioe-591-genomics/students/owenkanter/structure/output/ADMIXTURE_K4.png", plot = ADMIXTURE_K4, width = 6, height = 4, dpi = 300)
+```
+
+#Read in ADMIXTURE files for K = 6
+
+```{r}
+# read sample names and extract
+fam <- read_table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/species.int.fam", 
+  col_names = FALSE,
+  show_col_types = FALSE
+)
+samples <- fam$X2   # individual IDs are usually column 2
+
+# choose your K value (will be 2 for this demo)
+K <- 6
+
+# read Q matrix
+q6 <- read_table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/data/k6/species.int.6.Q",
+  col_names = FALSE,
+  show_col_types = FALSE
+)
+
+# name the ancestry columns
+colnames(q6) <- paste0("Cluster", 1:K)
+
+# combine with sample names
+q_df6 <- q6 %>%
+  mutate(sample = samples) %>%
+  relocate(sample)
+
+# convert to long format for ggplot
+q_long6 <- q_df6 %>%
+  pivot_longer(
+    cols = starts_with("Cluster"),
+    names_to = "cluster",
+    values_to = "ancestry"
+  ) %>%
+  mutate(sample = factor(sample, levels = samples))
+```
+
+#Plot K = 6 in ggplot and save
+
+```{r}
+# plot
+ADMIXTURE_K6 <- ggplot(q_long6, aes(x = sample, y = ancestry, fill = cluster)) +
+  geom_col(width = 1, color="white") +
+  theme_bw() +
+  labs(title = "ADMIXTURE Plot for K = 6 for Song Sparrows in SF Bay Area", x = "Individual", y = "Ancestry proportion") +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+#save plot
+print(ADMIXTURE_K6)
+
+ggsave("/home/group/bioe-591-genomics/students/owenkanter/structure/output/ADMIXTURE_K6.png", plot = ADMIXTURE_K6, width = 6, height = 4, dpi = 300)
+```
+# Table Comparing Cross-Validation Values
+
+```{r}
+library(readr)
+library(dplyr)
+
+#Read in file produced by grep command
+  K246_CVs <- read.table("/home/f85j978/bioe-591-genomics/students/owenkanter/structure/log/admixture_K246_CVs.txt", header = FALSE, sep = ":")
+  
+#Rename columns and text in columns referring to K values
+  colnames(K246_CVs) <- c("K", "Cross-Validation Values")
+  
+  K246_CVs <- K246_CVs %>%
+    mutate(K = recode(K, 
+      "CV error (K=2)" = "2",
+      "CV error (K=4)" = "4",
+      "CV error (K=6)" = "6"))
+  
+```
+
+# Create Table of CV Values
+
+```{r}
+# Load packages
+  library(flextable)
+  library(webshot2)
+
+# Ajusting table, reducing decimals, aligning columns, and adjusting font
+  K246_CVs_Table <- flextable(K246_CVs) %>%
+    align(align = "center", part = "all") %>%
+    fontsize(size = 12, part = "all") %>%
+    font(fontname = "Times New Roman", part = "all") %>%
+    bold(part = "header")
+
+#Save image
+  save_as_image(K246_CVs_Table, "/home/group/bioe-591-genomics/students/owenkanter/structure/output/CV_ComparisonTable.png")
+```
+
