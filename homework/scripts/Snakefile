@@ -10,18 +10,28 @@ rule all:
         "results/vcf/Diglossa_glauca_multisample.vcf",
         "results/filtered/Diglossa_glauca_multisample_filtered_vcf.gz"
 
-rule index:
+rule index_samtools:
     input:
         "genome/hemoglobin_references.fasta"
     output:
-        "genome/hemoglobin_references.fasta.fai",
+        "genome/hemoglobin_references.fasta.fai"
+    conda:
+        "envs/align.yaml"
+    shell:
+        """
+        samtools faidx {input}
+        """
+
+rule index_bwa:
+    input:
+        "genome/hemoglobin_references.fasta"
+    output:
         expand("genome/hemoglobin_references.fasta.{ext}", ext=["amb","ann","bwt","pac","sa"])
     conda:
         "envs/align.yaml"
     shell:
         """
         bwa index {input}
-        samtools faidx {input}
         """
 
 rule fastp:
@@ -42,9 +52,10 @@ rule fastp:
 
 rule align:
     input:
-        g="genome/hemoglobin_references.fasta",
         r1="results/clean/{sample}_R1.clean.fastq.gz",
-        r2="results/clean/{sample}_R2.clean.fastq.gz"
+        r2="results/clean/{sample}_R2.clean.fastq.gz",
+        refgen="genome/hemoglobin_references.fasta",
+        index=expand("genome/hemoglobin_references.fasta.{ext}", ext=["amb","ann","bwt","pac","sa"])
     output:
         "results/aligned/{sample}.sam"
     conda:
@@ -53,7 +64,7 @@ rule align:
         runtime=120
     shell:
         """
-        bwa mem -t 4 {input.g} {input.r1} {input.r2} > {output}
+        bwa mem -t 4 {input.refgen} {input.r1} {input.r2} > {output}
         """
 
 rule sort:
@@ -69,7 +80,7 @@ rule sort:
         """
         samtools view -b {input} | samtools sort -o {output}
         samtools index {output}
-        """	
+        """
 
 rule variantcalling:
     input:
@@ -83,9 +94,9 @@ rule variantcalling:
         runtime=120
     shell:
         """
-        bcftools mpileup -f {input.g} {input.r} | bcftools call -mv -Ov -o {output}
+        bcftools mpileup -f {input.g} -a FORMAT/DP,FORMAT/AD {input.r} | bcftools call -mv -Ov -o {output}
         """
-		
+
 rule variantsummary:
     input:
         "results/vcf/Diglossa_glauca_multisample.vcf"
@@ -97,11 +108,20 @@ rule variantsummary:
         """
         bcftools stats {input} > {output}
         """
-	    
+
+rule gzip_vcf:
+    input:
+        "results/vcf/Diglossa_glauca_multisample.vcf"
+    output:
+        "results/vcf/Diglossa_glauca_multisample.vcf.gz"
+    shell:
+        """
+        gzip -c {input} > {output}
+        """
 
 rule variantfiltering:
     input:
-        "results/vcf/Diglossa_glauca_multisample.vcf"
+        "results/vcf/Diglossa_glauca_multisample.vcf.gz"
     output:
         "results/filtered/Diglossa_glauca_multisample_filtered_vcf.gz"
     conda:
@@ -110,5 +130,10 @@ rule variantfiltering:
         runtime=120
     shell:
         """
-        vcftools --gzvcf {input} --remove-indels --minQ 40 --thin 50 --mac 3 --max-missing-count 1 --min-meanDP 6 --recode --out {output}
+        vcftools --gzvcf {input} \
+                 --remove-indels \
+                 --minQ 40 \
+                 --thin 50 \
+                 --min-meanDP 6 \
+                 --recode --stdout | bgzip -c > {output}
         """

@@ -324,3 +324,156 @@ rule variantfiltering:
         """
         vcftools --gzvcf {input} --remove-indels --minQ 40 --thin 50 --mac 3 --max-missing-count 1 --min-meanDP 6 --recode --out {output}
         """
+		
+-----------
+
+4/13/2026
+
+SAMPLES = ["Diglossa_glauca_161092","Diglossa_glauca_161139"]
+
+rule all:
+    input:
+        "genome/hemoglobin_references.fasta",
+        expand("results/clean/{sample}_R1.clean.fastq.gz", sample=SAMPLES),
+        expand("results/clean/{sample}_R2.clean.fastq.gz", sample=SAMPLES),
+        expand("results/aligned/{sample}.sam", sample=SAMPLES),
+        expand("results/aligned/{sample}.sorted.bam", sample=SAMPLES),
+        "results/vcf/Diglossa_glauca_multisample.vcf",
+        "results/filtered/Diglossa_glauca_multisample_filtered_vcf.gz"
+
+rule index_samtools:
+    input:
+        "genome/hemoglobin_references.fasta"
+    output:
+        "genome/hemoglobin_references.fasta.fai"
+    conda:
+        "envs/align.yaml"
+    shell:
+        """
+        samtools faidx {input}
+        """
+
+rule index_bwa:
+    input:
+        "genome/hemoglobin_references.fasta"
+    output:
+        expand("genome/hemoglobin_references.fasta.{ext}", ext=["amb","ann","bwt","pac","sa"])
+    conda:
+        "envs/align.yaml"
+    shell:
+        """
+        bwa index {input}
+        """
+
+rule fastp:
+    conda:
+        "envs/fastp.yaml"
+    input:
+        r1="data/{sample}_R1_001.fastq.gz",
+        r2="data/{sample}_R2_001.fastq.gz"
+    output:
+        r1="results/clean/{sample}_R1.clean.fastq.gz",
+        r2="results/clean/{sample}_R2.clean.fastq.gz"
+    shell:
+        """
+        fastp \
+        -i {input.r1} -I {input.r2} \
+        -o {output.r1} -O {output.r2}
+        """
+
+rule align:
+    input:
+        r1="results/clean/{sample}_R1.clean.fastq.gz",
+        r2="results/clean/{sample}_R2.clean.fastq.gz",
+		refgen="genome/hemoglobin_references.fasta",
+		index=expand("genome/hemoglobin_references.fasta.{ext}", ext=["amb","ann","bwt","pac","sa"])
+    output:
+        "results/aligned/{sample}.sam"
+    conda:
+        "envs/align.yaml"
+    resources:
+        runtime=120
+    shell:
+        """
+        bwa mem -t 4 {input.refgen} {input.r1} {input.r2} > {output}
+        """
+		
+rule sort:
+    input:
+        "results/aligned/{sample}.sam"
+    output:
+        "results/aligned/{sample}.sorted.bam"
+    conda:
+        "envs/align.yaml"
+    resources:
+        runtime=120
+    shell:
+        """
+        samtools view -b {input} | samtools sort -o {output}
+        samtools index {output}
+        """
+
+rule variantcalling:
+    input:
+        g="genome/hemoglobin_references.fasta",
+        r=expand("results/aligned/{sample}.sorted.bam", sample=SAMPLES)
+    output:
+        "results/vcf/Diglossa_glauca_multisample.vcf"
+    conda:
+        "envs/bcftools.yaml"
+    resources:
+        runtime=120
+    shell:
+        """
+        bcftools mpileup -f {input.g} {input.r} | bcftools call -mv -Ov -o {output}
+		
+rule variantsummary:
+    input:
+        "results/vcf/Diglossa_glauca_multisample.vcf"
+    output:
+        "results/filtered/Diglossa_glauca_multisample_vcf_stats.txt"
+    conda:
+        "envs/bcftools.yaml"
+    shell:
+        """
+        bcftools stats {input} > {output}
+        """
+
+
+rule variantfiltering:
+    input:
+        "results/vcf/Diglossa_glauca_multisample.vcf"
+    output:
+        "results/filtered/Diglossa_glauca_multisample_filtered_vcf.gz"
+    conda:
+        "envs/vcftools.yaml"
+    resources:
+        runtime=120
+    shell:
+        """
+        vcftools --gzvcf {input} --remove-indels --minQ 40 --thin 50 --mac 3 --max-missing-count 1 --min-meanDP 6 --recode --out {output}
+
+--------
+Snakemake 9 error logs
+
+.snakemake/slurm_logs/rule_variantfiltering/3851560.log
+.snakemake/log/2026-04-13T143549.226068.snakemake.log
+
+rule variantcalling:
+    input:
+        g="genome/hemoglobin_references.fasta",
+        r=expand("results/aligned/{sample}.sorted.bam", sample=SAMPLES)
+    output:
+        "results/vcf/Diglossa_glauca_multisample.vcf"
+    conda:
+        "envs/bcftools.yaml"
+    resources:
+        runtime=120
+    shell:
+        """
+        bcftools mpileup -f {input.g} -a FORMAT/DP,FORMAT/AD {input.r} | bcftools call -mv -Ov -o {output}
+        """
+
+11 Error logs
+/.snakemake/slurm_logs/rule_variantfiltering/3852791.log
+.snakemake/log/2026-04-14T093817.576169.snakemake.log
