@@ -19,6 +19,8 @@ homework/ #subdirectory for all assignments
 		
 		structure/ #subdirectory for individual ancestry proportion figures, cross-validation values table, and BIC plot
 		
+		snakemake/ #subdirectory for snakemake html, dry run, dag
+		
 	scripts/ #subdirectory for all scripts
 		
 practice/ #subdirectory for practice scripts or drafts for reference
