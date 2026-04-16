@@ -131,58 +131,64 @@ done
 
 #!/bin/bash
 #SBATCH --account=priority-bioe-591-genomics        
-#SBATCH --job-name=admixture_extractCVs                           
+#SBATCH --job-name=admixture_23456_extractCVs                           
 #SBATCH --partition=priority              
 #SBATCH --nodes=1                       
 #SBATCH --ntasks-per-node=1             
 #SBATCH --cpus-per-task=1              
 #SBATCH --time=0-10:00:00                 
-#SBATCH --output=log/admixture_extractCVs-%j.out
-#SBATCH --error=log/admixture_extractCVs-%j.err
+#SBATCH --output=log/admixture_23456_extractCVs-%j.out
+#SBATCH --error=log/admixture_23456_extractCVs-%j.err
 
 module load Mamba/23.11.0-0;
 eval "$(conda shell.bash hook)"
 conda activate admixture
 
-grep -h "CV error" log_*2.out
+grep -h "CV error" admixlogs/k2/log_K2_rep*.out > admixlogs/CVError_K3.txt
 
-grep -h "CV error" admixlogs/log_*3.out > admixlogs/CVError_K3.txt
+grep -h "CV error" admixlogs/k3/log_K3_rep*.out > admixlogs/CVError_K3.txt
 
-grep -h "CV error" admixlogs/log_*4.out > admixlogs/CVError_K4.txt
+grep -h "CV error" admixlogs/k4/log_K4_rep*.out > admixlogs/CVError_K4.txt
 
-grep -h "CV error" admixlogs/log_*5.out > admixlogs/CVError_K5.txt
+grep -h "CV error" admixlogs/k5/log_K5_rep*.out > admixlogs/CVError_K5.txt
 
-grep -h "CV error" admixlogs/log_*6.out > admixlogs/CVError_K6.txt
+grep -h "CV error" admixlogs/k6/log_K6_rep*.out > admixlogs/CVError_K6.txt 
 
 #!/bin/bash
 #SBATCH --account=priority-bioe-591-genomics        
-#SBATCH --job-name=admixture_K4_K6                            
+#SBATCH --job-name=admixture_K23456_data_3                            
 #SBATCH --partition=priority              
 #SBATCH --nodes=1                       
 #SBATCH --ntasks-per-node=1             
 #SBATCH --cpus-per-task=1              
 #SBATCH --time=0-10:00:00                 
-#SBATCH --output=log/admixture_K4_K6_2-%j.out
-#SBATCH --error=log/admixture_K4_K6-%j.err
+#SBATCH --output=log/admixture_K23456_data_3-%j.out
+#SBATCH --error=log/admixture_K23456_data_3-%j.err
 
 module load Mamba/23.11.0-0;
 eval "$(conda shell.bash hook)"
 conda activate admixture
 
-admixture --cv data/k4/species.int.bed 4
+admixture --cv data/species.int.bed 2
 
-admixture --cv data/k6/species.int.bed 6
+admixture --cv data/species.int.bed 3
+
+admixture --cv data/species.int.bed 4
+
+admixture --cv data/species.int.bed 5
+
+admixture --cv data/species.int.bed 6
 
 #!/bin/bash
 #SBATCH --account=priority-bioe-591-genomics        
-#SBATCH --job-name=admixture_K4_K6_CVs                           
+#SBATCH --job-name=admixture_K23456_CVs                           
 #SBATCH --partition=priority              
 #SBATCH --nodes=1                       
 #SBATCH --ntasks-per-node=1             
 #SBATCH --cpus-per-task=1              
 #SBATCH --time=0-10:00:00                 
-#SBATCH --output=log/admixture_K4_K6_CVs-%j.out
-#SBATCH --error=log/admixture_K4_K6_CVs-%j.err
+#SBATCH --output=log/admixture_K23456_CVs-%j.out
+#SBATCH --error=log/admixture_K23456_CVs-%j.err
 
 module load Mamba/23.11.0-0;
 eval "$(conda shell.bash hook)"
@@ -193,7 +199,15 @@ for rep in {1..5}; do
 done
 
 for rep in {1..5}; do
+  admixture --cv data/species.int.bed 3 | tee log_K3_rep${rep}.out
+done
+
+for rep in {1..5}; do
   admixture --cv data/species.int.bed 4 | tee log_K4_rep${rep}.out
+done
+
+for rep in {1..5}; do
+  admixture --cv data/species.int.bed 5 | tee log_K5_rep${rep}.out
 done
 
 for rep in {1..5}; do
