@@ -17,7 +17,7 @@ homework/ #subdirectory for all assignments
 		
 		kinship/ #subdirectory for kinship summary table png
 		
-		structure/ #subdirectory for individual ancestry proportion figures, cross-validation values table, and BIC plot
+		admixture/ #subdirectory for individual ancestry proportion figures, cross-validation values table, and BIC plot
 		
 		snakemake/ #subdirectory for snakemake html, dry run, dag
 		

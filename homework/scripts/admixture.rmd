@@ -376,12 +376,13 @@ q_long_all$sample <- factor(q_long_all$sample, levels = sample_order)
 # Plot q-long all in stacked bar plots
 
 ```{r}
-ADMIXTURE_K23456 <- ggplot(q_long_all, aes(x = sample, y = ancestry, fill = cluster)) +
+ADMIXTURE_K23456_SortK2 <- ggplot(q_long_all, aes(x = sample, y = ancestry, fill = cluster)) +
   geom_col(width = 1, color = "white") +
   facet_wrap(~ K, ncol = 1) +  # stacks vertically
   theme_bw() +
   labs(
-    title = "ADMIXTURE Plots for Song Sparrow Data (Mikles et al. 2020)",
+    title = "ADMIXTURE Plots for Song Sparrow Data Sorted by 
+    K = 2 (Mikles et al. 2020)",
     x = "Individual",
     y = "Ancestry proportion"
   ) +
@@ -391,9 +392,9 @@ ADMIXTURE_K23456 <- ggplot(q_long_all, aes(x = sample, y = ancestry, fill = clus
   )
 
 #save plot
-print(ADMIXTURE_K23456)
+print(ADMIXTURE_K23456_SortK2)
 
-ggsave("/home/group/bioe-591-genomics/students/owenkanter/structure/output/ADMIXTURE_K23456.png", plot = ADMIXTURE_K23456, width = 6, height = 4, dpi = 300)
+ggsave("/home/group/bioe-591-genomics/students/owenkanter/structure/output/ADMIXTURE_K23456_SortK2.png", plot = ADMIXTURE_K23456_SortK2, width = 6, height = 4, dpi = 300)
 ```
 # Table Comparing Cross-Validation Values
 
@@ -436,3 +437,55 @@ library(readr)
   save_as_image(K23456_CVs_Table, "/home/group/bioe-591-genomics/students/owenkanter/structure/output/CV_ComparisonTable.png")
 ```
 
+# Ordering individuals based on K = 6
+
+```{r}
+# Create ordering data frame based on K = 6 clustering
+
+q_wide6 <- q_long6 %>%
+  pivot_wider(names_from = cluster, values_from = ancestry)
+
+# Apply ordering data frame to create sample order
+
+q_wide6 <- q_wide6 %>%
+  arrange(
+    desc(`Cluster1`),
+    desc(`Cluster2`),
+    desc(`Cluster3`),
+    desc(`Cluster4`),
+    desc(`Cluster5`),
+    desc(`Cluster6`)
+  )
+
+# Extract sample order
+
+sample_order6 <- q_wide6$sample
+
+# Apply to all values of K so that individuals line up in bar plot
+
+q_long_all$sample <- factor(q_long_all$sample, levels = sample_order6)
+```
+
+# Plot q-long all in stacked bar plots for ordering of k = 6
+
+```{r}
+ADMIXTURE_K23456_SortK6 <- ggplot(q_long_all, aes(x = sample, y = ancestry, fill = cluster)) +
+  geom_col(width = 1, color = "white") +
+  facet_wrap(~ K, ncol = 1) +  # stacks vertically
+  theme_bw() +
+  labs(
+    title = "ADMIXTURE Plots for Song Sparrow Data Sorted by
+    K = 6 (Mikles et al. 2020)",
+    x = "Individual",
+    y = "Ancestry proportion"
+  ) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+  )
+
+#save plot
+print(ADMIXTURE_K23456_SortK6)
+
+ggsave("/home/group/bioe-591-genomics/students/owenkanter/structure/output/ADMIXTURE_K23456_SortK6.png", plot = ADMIXTURE_K23456_SortK6, width = 6, height = 4, dpi = 300)
+```
