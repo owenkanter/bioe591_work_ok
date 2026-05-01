@@ -21,6 +21,6 @@ homework/ #subdirectory for all assignments
 		
 		snakemake/ #subdirectory for snakemake html, dry run, dag
 		
-	scripts/ #subdirectory for all scripts
+	scripts/ #subdirectory for all scripts (sbtach and RMD files)
 		
 practice/ #subdirectory for practice scripts or drafts for reference
