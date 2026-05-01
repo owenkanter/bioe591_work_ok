@@ -36,7 +36,7 @@ Owen Kanter
 	VCF Documentation: "Calculates a measure of heterozygosity on a per-individual basis. Specfically, the inbreeding coefficient, F, is estimated for each individual using a method of moments."
 	Justification: Allows for the evaluation of 
 	
-| Individual | Observed Homozygosity | Expected Homozygosity | N_Sites | F |
+| Individual | Observed Homozygosity | Expected Homozygosity | N_Sites | $F_{IS}$ |
 |---|---|---|---|---|
 | 161092 | 29 | 22.1 | 42 | 0.34703 |
 | 161139 | 34 | 22.1 | 42 | 0.59817 |
@@ -45,4 +45,4 @@ Owen Kanter
 | 176863 | 28 | 22.1 | 42 | 0.29680 |
 | 218504 | 30 | 22.1 | 42 | 0.39726 |
 
-Interpretation: Given that these loci are exons and likely under strong natural selection, the high F_{IS} values are expected. 
+Interpretation: Given that these loci are exons and likely under strong natural selection, the high $F_{IS}$ values are expected. 

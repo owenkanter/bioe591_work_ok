@@ -14,8 +14,8 @@ html report: Diglossa_glauca_161092_owenkanter.fastp.html
 
 **3. What is the estimated insert size, and what percentage of your reads is it based on?**
 
-Estimated insert size is the estimated length (bp) of reads included in the analysis after adapter sequences have been removed.
-It was based on 21.77 % of paired end reads for which length could be determined.
+Estimated insert size is the estimated length (bp) of reads included in the analysis after adapter sequences have been removed. The
+insert size peak is 271. It was based on 21.77 % of paired end reads for which length could be determined.
 
 **4. At approximately what read position does mean quality drop below Q30 on read1 after filtering? How does this differ from the position at which mean quality drops below Q30 on read2 before filtering?**
 
